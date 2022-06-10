@@ -175,13 +175,13 @@ class YoloObjectDetectorSRV {
   image** demoAlphabet_;
   int demoClasses_;
 
-  std::string cameraTopicName;
-  ros::ServiceServer image_service;
-  int countfetch = 1000;
-  int countdetect = 1000;
-  int countpublish = 1000;
-  int countdisplay = 1000;
-  darknet_ros_msgs::BoundingBoxes boundingBoxSrv;
+  ros::ServiceServer image_service_;
+  int countfetch_ = 1000;
+  int countdetect_ = 1000;
+  int countpublish_ = 1000;
+  int countdisplay_ = 1000;
+  int demo_ = 0; 
+  darknet_ros_msgs::BoundingBoxes boundingBoxSrv_;
 
   network* net_;
   std_msgs::Header headerBuff_[3];

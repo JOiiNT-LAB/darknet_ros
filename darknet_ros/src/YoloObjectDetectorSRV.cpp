@@ -139,8 +139,7 @@ void YoloObjectDetectorSRV::init() {
   nodeHandle_.param("publishers/detection_image/queue_size", detectionImageQueueSize, 1);
   nodeHandle_.param("publishers/detection_image/latch", detectionImageLatch, true);
 
-  //imageSubscriber_ = imageTransport_.subscribe(cameraTopicName, cameraQueueSize, &YoloObjectDetectorSRV::cameraCallback, this);
-  image_service = nodeHandle_.advertiseService("get_bounding", &YoloObjectDetectorSRV::cameraCallbackSrv, this);
+  image_service_ = nodeHandle_.advertiseService("get_bounding", &YoloObjectDetectorSRV::cameraCallbackSrv, this);
 
   objectPublisher_ =
       nodeHandle_.advertise<darknet_ros_msgs::ObjectCount>(objectDetectorTopicName, objectDetectorQueueSize, objectDetectorLatch);
@@ -158,39 +157,12 @@ void YoloObjectDetectorSRV::init() {
   checkForObjectsActionServer_->start();
 }
 
-/*void YoloObjectDetectorSRV::cameraCallback(const sensor_msgs::ImageConstPtr& msg) {
-  ROS_DEBUG("[YoloObjectDetectorSRV] USB image received.");
-
-  cv_bridge::CvImagePtr cam_image;
-
-  try {
-    cam_image = cv_bridge::toCvCopy(msg, msg->encoding);
-  } catch (cv_bridge::Exception& e) {
-    ROS_ERROR("cv_bridge exception: %s", e.what());
-    return;
-  }
-
-  if (cam_image) {
-    {
-      boost::unique_lock<boost::shared_mutex> lockImageCallback(mutexImageCallback_);
-      imageHeader_ = msg->header;
-      camImageCopy_ = cam_image->image.clone();
-    }
-    {
-      boost::unique_lock<boost::shared_mutex> lockImageStatus(mutexImageStatus_);
-      imageStatus_ = true;
-    }
-    frameWidth_ = cam_image->image.size().width;
-    frameHeight_ = cam_image->image.size().height;
-  }
-  return;
-}*/
 bool YoloObjectDetectorSRV::cameraCallbackSrv(darknet_ros_msgs::DarknetSrv::Request &req, darknet_ros_msgs::DarknetSrv::Response &res) {
   
-  countfetch = 0;
-  countdetect = 0;
-  countpublish = 0;
-  countdisplay = 0;
+  countfetch_ = 0;
+  countdetect_ = 0;
+  countpublish_ = 0;
+  countdisplay_ = 0;
 
   ROS_DEBUG("[YoloObjectDetectorSRV] USB image received.");
 
@@ -217,14 +189,11 @@ bool YoloObjectDetectorSRV::cameraCallbackSrv(darknet_ros_msgs::DarknetSrv::Requ
     frameHeight_ = cam_image->image.size().height;
   }
 
-  while ((countdetect < 10) || (countfetch < 10) || (countpublish < 10)) {
-      //int I = 0;
-      //std::cout <<"while loop" << countfetch << " " << countdetect << std::endl;
-      //std::cout << std::endl;
+  while ((countdetect_ < 10) || (countfetch_ < 10) || (countpublish_ < 10)) {
       usleep(100000);
   }
 
-  res.bndbox = boundingBoxSrv;
+  res.bndbox = boundingBoxSrv_;
 
   return true;
 }
@@ -273,14 +242,14 @@ bool YoloObjectDetectorSRV::isCheckingForObjects() const {
 }
 
 bool YoloObjectDetectorSRV::publishDetectionImage(const cv::Mat& detectionImage) {
-  if (detectionImagePublisher_.getNumSubscribers() < 1) return false;
+  /*if (detectionImagePublisher_.getNumSubscribers() < 1) return false;
   cv_bridge::CvImage cvImage;
   cvImage.header.stamp = ros::Time::now();
   cvImage.header.frame_id = "detection_image";
-  cvImage.encoding = sensor_msgs::image_encodings::BGR8;
+  cvImage.encoding = sensor_msgs::image_encodings::RGB8;
   cvImage.image = detectionImage;
   detectionImagePublisher_.publish(*cvImage.toImageMsg());
-  ROS_DEBUG("Detection image has been published.");
+  ROS_DEBUG("Detection image has been published.");*/
   return true;
 }
 
@@ -336,7 +305,7 @@ detection* YoloObjectDetectorSRV::avgPredictions(network* net, int* nboxes) {
 }
 
 void* YoloObjectDetectorSRV::detectInThread() {
-  if (countdetect < 10)
+  if (countdetect_ < 10)
   {
     running_ = 1;
     float nms = .4;
@@ -410,14 +379,13 @@ void* YoloObjectDetectorSRV::detectInThread() {
     demoIndex_ = (demoIndex_ + 1) % demoFrame_;
     running_ = 0;
 
-    countdetect++;
-    //std::cout << "countdetect: " << countdetect << std::endl;
+    countdetect_++;
   }
   return 0;
 }
 
 void* YoloObjectDetectorSRV::fetchInThread() {
-  if (countfetch < 10)
+  if (countfetch_ < 10)
   {
     {
         boost::shared_lock<boost::shared_mutex> lock(mutexImageCallback_);
@@ -430,16 +398,16 @@ void* YoloObjectDetectorSRV::fetchInThread() {
     rgbgr_image(buff_[buffIndex_]);
     letterbox_image_into(buff_[buffIndex_], net_->w, net_->h, buffLetter_[buffIndex_]);
 
-    countfetch++;
-    //std::cout << "countfetch: " << countfetch << std::endl;
+    countfetch_++;
+    //std::cout << "countfetch_: " << countfetch_ << std::endl;
   }
 
   return 0;
 }
 
 void* YoloObjectDetectorSRV::displayInThread(void* ptr) {
-  if (countdisplay < 10)
-  { 
+  /*if (countdisplay_ < 10)
+  {
     int c = show_image(buff_[(buffIndex_ + 1) % 3], "YOLO", 1);
     if (c != -1) c = c % 256;
     if (c == 27) {
@@ -456,9 +424,15 @@ void* YoloObjectDetectorSRV::displayInThread(void* ptr) {
       demoHier_ -= .02;
       if (demoHier_ <= .0) demoHier_ = .0;
     }
-
-    countdisplay++;
+    countdisplay_++;
   }
+  else 
+  {
+    int c = show_image(buff_[demo_], "YOLO", 1);
+    if (demo_<2) demo_++;
+    else demo_ = 0;
+  }*/
+
   return 0;
 }
 
@@ -538,7 +512,7 @@ void YoloObjectDetectorSRV::yolo() {
     if (fullScreen_) {
       cv::setWindowProperty("YOLO", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
     } else {
-      cv::moveWindow("YOLO", 0, 0);
+      cv::moveWindow("YOLO", 1920, 0);
       cv::resizeWindow("YOLO", 640, 480);
     }
   }
@@ -569,6 +543,14 @@ void YoloObjectDetectorSRV::yolo() {
     if (!isNodeRunning()) {
       demoDone_ = true;
     }
+
+    cv_bridge::CvImage cvImage;
+    cvImage.header.stamp = ros::Time::now();
+    cvImage.header.frame_id = "detection_image";
+    cvImage.encoding = sensor_msgs::image_encodings::BGR8;
+    cvImage.image = image_to_mat(buff_[(buffIndex_ + 1) % 3]);
+    detectionImagePublisher_.publish(*cvImage.toImageMsg());
+
   }
 }
 
@@ -588,14 +570,14 @@ bool YoloObjectDetectorSRV::isNodeRunning(void) {
 }
 
 void* YoloObjectDetectorSRV::publishInThread() {
-  if (countpublish < 10)
+  // Publish image.
+  cv::Mat cvImage = disp_;
+  if (!publishDetectionImage(cv::Mat(cvImage))) {
+    ROS_DEBUG("Detection image has not been broadcasted.");
+  }
+  
+  if (countpublish_ < 10)
   {
-    // Publish image.
-    cv::Mat cvImage = disp_;
-    if (!publishDetectionImage(cv::Mat(cvImage))) {
-      ROS_DEBUG("Detection image has not been broadcasted.");
-    }
-
     // Publish bounding boxes and detection result.
     int num = roiBoxes_[0].num;
     if (num > 0 && num <= 100) {
@@ -654,7 +636,7 @@ void* YoloObjectDetectorSRV::publishInThread() {
       checkForObjectsActionServer_->setSucceeded(objectsActionResult, "Send bounding boxes.");
     }
 
-    boundingBoxSrv = boundingBoxesResults_;
+    boundingBoxSrv_ = boundingBoxesResults_;
 
     boundingBoxesResults_.bounding_boxes.clear();
     for (int i = 0; i < numClasses_; i++) {
@@ -662,7 +644,7 @@ void* YoloObjectDetectorSRV::publishInThread() {
       rosBoxCounter_[i] = 0;
     }
 
-    countpublish++;
+    countpublish_++;
   }
   return 0;
 }

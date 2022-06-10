@@ -164,7 +164,6 @@ if (CUDA_FOUND)
 
   cuda_add_library(${PROJECT_NAME}_nodelet
     src/yolo_object_detector_nodelet.cpp
-    #src/yolo_object_detector_srv_nodelet.cpp
   )
 
 else()
@@ -178,7 +177,6 @@ else()
 
   add_library(${PROJECT_NAME}_nodelet
     src/yolo_object_detector_nodelet.cpp
-    #src/yolo_object_detector_srv_nodelet.cpp
   )
 
 endif()
