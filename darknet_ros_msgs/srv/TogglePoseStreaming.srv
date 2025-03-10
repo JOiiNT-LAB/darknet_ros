@@ -1,0 +1,4 @@
+bool                start_streaming
+---
+bool                success
+string message

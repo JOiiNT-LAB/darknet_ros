@@ -20,14 +20,14 @@ add_message_files(
     ObjectCount.msg
 )
 
-add_service_files(
-  FILES
-  DarknetSrv.srv
-)
-
 add_action_files(
   FILES
     CheckForObjects.action
+)
+
+add_service_files(
+  FILES
+  TogglePoseStreaming.srv #added
 )
 
 generate_messages(

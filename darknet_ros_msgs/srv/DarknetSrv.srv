@@ -1,3 +1,0 @@
-sensor_msgs/Image image
----
-darknet_ros_msgs/BoundingBoxes bndbox

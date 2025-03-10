@@ -14,7 +14,7 @@ message(STATUS "Darknet path dir = ${DARKNET_PATH}")
 add_definitions(-DDARKNET_FILE_PATH="${DARKNET_PATH}")
 
 # Find CUDA
-find_package(CUDA)
+find_package(CUDA QUIET)
 if (CUDA_FOUND)
   find_package(CUDA REQUIRED)
   message(STATUS "CUDA Version: ${CUDA_VERSION_STRINGS}")
@@ -92,9 +92,7 @@ include_directories(
 )
 
 set(PROJECT_LIB_FILES
-    src/YoloObjectDetector.cpp
-    src/YoloObjectDetectorSRV.cpp
-    src/image_interface.cpp
+    src/YoloObjectDetector.cpp                    src/image_interface.cpp
 )
 
 set(DARKNET_CORE_FILES
@@ -159,8 +157,9 @@ if (CUDA_FOUND)
     curand
   )
 
-  cuda_add_executable(${PROJECT_NAME} src/yolo_object_detector_node.cpp)
-  cuda_add_executable(darknet_ros_srv src/yolo_object_detector_srv_node.cpp)
+  cuda_add_executable(${PROJECT_NAME}
+    src/yolo_object_detector_node.cpp
+  )
 
   cuda_add_library(${PROJECT_NAME}_nodelet
     src/yolo_object_detector_nodelet.cpp
@@ -172,8 +171,9 @@ else()
     ${PROJECT_LIB_FILES} ${DARKNET_CORE_FILES}
   )
 
-  add_executable(${PROJECT_NAME} src/yolo_object_detector_node.cpp)
-  add_executable(darknet_ros_srv src/yolo_object_detector_srv_node.cpp)
+  add_executable(${PROJECT_NAME}
+    src/yolo_object_detector_node.cpp
+  )
 
   add_library(${PROJECT_NAME}_nodelet
     src/yolo_object_detector_nodelet.cpp
@@ -191,12 +191,13 @@ target_link_libraries(${PROJECT_NAME}_lib
   ${OpenCV_LIBS}
 )
 
-target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_lib)
+target_link_libraries(${PROJECT_NAME}
+  ${PROJECT_NAME}_lib
+)
 
-target_link_libraries(${PROJECT_NAME}_nodelet ${PROJECT_NAME}_lib)
-
-target_link_libraries(darknet_ros_srv ${PROJECT_NAME}_lib)
-
+target_link_libraries(${PROJECT_NAME}_nodelet
+  ${PROJECT_NAME}_lib
+)
 
 add_dependencies(${PROJECT_NAME}_lib
   darknet_ros_msgs_generate_messages_cpp
@@ -222,22 +223,27 @@ install(DIRECTORY config launch yolo_network_config
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
+install(PROGRAMS
+  /darknet_ros/darknet_ros/src/centroid.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 # Download yolov2-tiny.weights
-# set(PATH "${CMAKE_CURRENT_SOURCE_DIR}/yolo_network_config/weights")
-# set(FILE "${PATH}/yolov2-tiny.weights")
-# message(STATUS "Checking and downloading yolov2-tiny.weights if needed ...")
-# if (NOT EXISTS "${FILE}")
-#   message(STATUS "... file does not exist. Downloading now ...")
-#   execute_process(COMMAND wget -q https://github.com/leggedrobotics/darknet_ros/releases/download/1.1.4/yolov2-tiny.weights -P ${PATH})
-# endif()
+set(PATH "${CMAKE_CURRENT_SOURCE_DIR}/yolo_network_config/weights")
+set(FILE "${PATH}/yolov2-tiny.weights")
+message(STATUS "Checking and downloading yolov2-tiny.weights if needed ...")
+if (NOT EXISTS "${FILE}")
+  message(STATUS "... file does not exist. Downloading now ...")
+  execute_process(COMMAND wget -q https://github.com/leggedrobotics/darknet_ros/releases/download/1.1.4/yolov2-tiny.weights -P ${PATH})
+endif()
 
 # Download yolov3.weights
-# set(FILE "${PATH}/yolov3.weights")
-# message(STATUS "Checking and downloading yolov3.weights if needed ...")
-# if (NOT EXISTS "${FILE}")
-#   message(STATUS "... file does not exist. Downloading now ...")
-#   execute_process(COMMAND wget -q https://github.com/leggedrobotics/darknet_ros/releases/download/1.1.4/yolov3.weights -P ${PATH})
-# endif()
+set(FILE "${PATH}/yolov3.weights")
+message(STATUS "Checking and downloading yolov3.weights if needed ...")
+if (NOT EXISTS "${FILE}")
+  message(STATUS "... file does not exist. Downloading now ...")
+  execute_process(COMMAND wget -q https://github.com/leggedrobotics/darknet_ros/releases/download/1.1.4/yolov3.weights -P ${PATH})
+endif()
 
 #############
 ## Testing ##
@@ -245,13 +251,13 @@ install(DIRECTORY config launch yolo_network_config
 
 if(CATKIN_ENABLE_TESTING)
   # Download yolov2.weights
-  # set(PATH "${CMAKE_CURRENT_SOURCE_DIR}/yolo_network_config/weights")
-  # set(FILE "${PATH}/yolov2.weights")
-  # message(STATUS "Checking and downloading yolov2.weights if needed ...")
-  # if (NOT EXISTS "${FILE}")
-  #   message(STATUS "... file does not exist. Downloading now ...")
-  #   execute_process(COMMAND wget -q https://github.com/leggedrobotics/darknet_ros/releases/download/1.1.4/yolov2.weights -P ${PATH})
-  # endif()
+  set(PATH "${CMAKE_CURRENT_SOURCE_DIR}/yolo_network_config/weights")
+  set(FILE "${PATH}/yolov2.weights")
+  message(STATUS "Checking and downloading yolov2.weights if needed ...")
+  if (NOT EXISTS "${FILE}")
+    message(STATUS "... file does not exist. Downloading now ...")
+    execute_process(COMMAND wget -q https://github.com/leggedrobotics/darknet_ros/releases/download/1.1.4/yolov2.weights -P ${PATH})
+  endif()
 
   find_package(rostest REQUIRED)
 
